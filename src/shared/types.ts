@@ -86,7 +86,7 @@ export interface CutoffSummary {
 }
 
 export type BillFrequency = 'Monthly' | 'Weekly' | 'Yearly' | 'One-time'
-export type BillStatus = 'Upcoming' | 'Paid' | 'Overdue'
+export type BillStatus = 'Upcoming' | 'Partially Paid' | 'Paid' | 'Overdue'
 export type DurationUnit = 'Weeks' | 'Months'
 
 export interface Bill {
@@ -99,6 +99,8 @@ export interface Bill {
   accountId: number | null
   status: BillStatus
   lastPaidDate: string | null
+  paidCentavos: number
+  remainingCentavos: number
   durationValue: number | null // e.g. 6, for installment plans like Buy Now Pay Later
   durationUnit: DurationUnit | null
 }
@@ -132,6 +134,22 @@ export type NewDebt = Omit<Debt, 'id'>
 export interface DebtSummary {
   totalDebtCentavos: number
   monthlyDebtPaymentsCentavos: number
+}
+
+export interface Payment {
+  id: number
+  date: string
+  amountCentavos: number
+  accountId: number | null
+  notes: string | null
+  transactionId: number | null
+}
+
+export interface NewPayment {
+  date: string
+  amountCentavos: number
+  accountId: number | null
+  notes: string | null
 }
 
 export interface SavingsGoal {
