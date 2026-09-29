@@ -94,7 +94,7 @@ function applySchema(database: Database.Database): void {
       amount_centavos INTEGER NOT NULL CHECK (amount_centavos > 0),
       account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
       notes TEXT,
-      transaction_id INTEGER REFERENCES transactions(id) ON DELETE SET NULL,
+      transaction_id INTEGER UNIQUE REFERENCES transactions(id) ON DELETE SET NULL,
       CHECK (
         (type = 'BILL_PAYMENT' AND bill_id IS NOT NULL AND debt_id IS NULL AND occurrence_month IS NOT NULL) OR
         (type = 'DEBT_PAYMENT' AND debt_id IS NOT NULL AND bill_id IS NULL AND occurrence_month IS NULL)
