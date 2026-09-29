@@ -11,6 +11,7 @@ interface TransactionRow {
   account_id: number | null
   notes: string | null
   cutoff: Transaction['cutoff']
+  is_payment: number
 }
 
 function toTransaction(row: TransactionRow): Transaction {
@@ -23,7 +24,8 @@ function toTransaction(row: TransactionRow): Transaction {
     amountCentavos: row.amount_centavos,
     accountId: row.account_id,
     notes: row.notes,
-    cutoff: row.cutoff
+    cutoff: row.cutoff,
+    isPayment: row.is_payment === 1
   }
 }
 
@@ -50,7 +52,10 @@ export function listTransactions(filter: TransactionFilter = {}): Transaction[] 
 
   const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : ''
   const rows = getDatabase()
-    .prepare(`SELECT * FROM transactions ${where} ORDER BY date DESC, id DESC`)
+    .prepare(
+      `SELECT t.*, EXISTS(SELECT 1 FROM payments p WHERE p.transaction_id = t.id) AS is_payment
+       FROM transactions t ${where} ORDER BY t.date DESC, t.id DESC`
+    )
     .all(params) as TransactionRow[]
   return rows.map(toTransaction)
 }
@@ -66,7 +71,11 @@ export function createTransaction(transaction: NewTransaction): Transaction {
 }
 
 export function updateTransaction(transaction: Transaction): void {
-  getDatabase()
+  const db = getDatabase()
+  if (db.prepare('SELECT 1 FROM payments WHERE transaction_id = ?').get(transaction.id)) {
+    throw new Error('Payment transactions must be managed from their bill or debt.')
+  }
+  db
     .prepare(
       `UPDATE transactions
        SET date = @date, type = @type, category_id = @categoryId, description = @description,
@@ -77,5 +86,9 @@ export function updateTransaction(transaction: Transaction): void {
 }
 
 export function deleteTransaction(id: number): void {
-  getDatabase().prepare('DELETE FROM transactions WHERE id = ?').run(id)
+  const db = getDatabase()
+  if (db.prepare('SELECT 1 FROM payments WHERE transaction_id = ?').get(id)) {
+    throw new Error('Payment transactions cannot be deleted from Transactions.')
+  }
+  db.prepare('DELETE FROM transactions WHERE id = ?').run(id)
 }

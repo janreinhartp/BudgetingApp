@@ -19,6 +19,7 @@ import type {
   Debt,
   NewBill,
   NewDebt,
+  NewPayment,
   NewSavingsGoal,
   NewTransaction,
   SavingsGoal,
@@ -69,12 +70,13 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('bills:list', () => billsService.listBills())
   ipcMain.handle('bills:create', (_e, bill: NewBill) => billsService.createBill(bill))
-  ipcMain.handle('bills:update', (_e, bill: Omit<Bill, 'status'>) =>
+  ipcMain.handle('bills:update', (_e, bill: Omit<Bill, 'status' | 'paidCentavos' | 'remainingCentavos'>) =>
     billsService.updateBill(bill)
   )
   ipcMain.handle('bills:delete', (_e, id: number) => billsService.deleteBill(id))
-  ipcMain.handle('bills:markPaid', (_e, id: number, createExpenseTransaction: boolean) =>
-    billsService.markBillPaid(id, createExpenseTransaction)
+  ipcMain.handle('bills:payments', (_e, id: number) => billsService.listBillPayments(id))
+  ipcMain.handle('bills:pay', (_e, id: number, payment: NewPayment) =>
+    billsService.recordBillPayment(id, payment)
   )
 
   ipcMain.handle('settings:get', () => settingsService.getSettings())
@@ -87,6 +89,10 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('debts:create', (_e, debt: NewDebt) => debtsService.createDebt(debt))
   ipcMain.handle('debts:update', (_e, debt: Debt) => debtsService.updateDebt(debt))
   ipcMain.handle('debts:delete', (_e, id: number) => debtsService.deleteDebt(id))
+  ipcMain.handle('debts:payments', (_e, id: number) => debtsService.listDebtPayments(id))
+  ipcMain.handle('debts:pay', (_e, id: number, payment: NewPayment) =>
+    debtsService.recordDebtPayment(id, payment)
+  )
 
   ipcMain.handle('savings:list', () => savingsService.listSavingsGoals())
   ipcMain.handle('savings:create', (_e, goal: NewSavingsGoal) =>

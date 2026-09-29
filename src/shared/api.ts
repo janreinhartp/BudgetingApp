@@ -10,7 +10,9 @@ import type {
   DebtSummary,
   NewBill,
   NewDebt,
+  NewPayment,
   NewSavingsGoal,
+  Payment,
   NewTransaction,
   SavingsGoal,
   Transaction,
@@ -49,9 +51,10 @@ export interface BudgetingApi {
   bills: {
     list: () => Promise<Bill[]>
     create: (bill: NewBill) => Promise<Bill>
-    update: (bill: Omit<Bill, 'status'>) => Promise<void>
+    update: (bill: Omit<Bill, 'status' | 'paidCentavos' | 'remainingCentavos'>) => Promise<void>
     delete: (id: number) => Promise<void>
-    markPaid: (id: number, createExpenseTransaction: boolean) => Promise<void>
+    payments: (id: number) => Promise<Payment[]>
+    pay: (id: number, payment: NewPayment) => Promise<Payment>
   }
   settings: {
     get: () => Promise<AppSettings>
@@ -63,6 +66,8 @@ export interface BudgetingApi {
     create: (debt: NewDebt) => Promise<Debt>
     update: (debt: Debt) => Promise<void>
     delete: (id: number) => Promise<void>
+    payments: (id: number) => Promise<Payment[]>
+    pay: (id: number, payment: NewPayment) => Promise<Payment>
   }
   savings: {
     list: () => Promise<SavingsGoal[]>
@@ -76,4 +81,3 @@ export interface BudgetingApi {
     exportTransactionsCsv: () => Promise<{ success: boolean; message: string }>
   }
 }
-

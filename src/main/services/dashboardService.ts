@@ -9,7 +9,6 @@ import {
 } from '@shared/calculations'
 import type { CalcTransaction } from '@shared/calculations'
 import type { DashboardSummary } from '@shared/types'
-import { listBills } from './billsService'
 
 /** Returns the current month in Asia/Manila as YYYY-MM. */
 export function currentMonth(): string {
@@ -23,9 +22,10 @@ export function currentMonth(): string {
 export function getDashboardSummary(month: string = currentMonth()): DashboardSummary {
   const rows = getDatabase()
     .prepare(
-      `SELECT type, date, amount_centavos as amountCentavos, cutoff
-       FROM transactions
-       WHERE strftime('%Y-%m', date) = ?`
+      `SELECT t.type, t.date, t.amount_centavos as amountCentavos, t.cutoff, p.type as paymentType
+       FROM transactions t
+       LEFT JOIN payments p ON p.transaction_id = t.id
+       WHERE strftime('%Y-%m', t.date) = ?`
     )
     .all(month) as CalcTransaction[]
 
@@ -33,7 +33,9 @@ export function getDashboardSummary(month: string = currentMonth()): DashboardSu
   const expensesCentavos = calculateMonthlyExpenses(rows, month)
   const debtPaymentsCentavos = calculateMonthlyDebtPayments(rows, month)
   const savingsCentavos = calculateMonthlySavings(rows, month)
-  const billsCentavos = calculateMonthlyBills(listBills(), month)
+  const billsCentavos = (getDatabase()
+    .prepare("SELECT COALESCE(SUM(amount_centavos), 0) AS total FROM payments WHERE type = 'BILL_PAYMENT' AND strftime('%Y-%m', date) = ?")
+    .get(month) as { total: number }).total
 
   const remainingCentavos = calculateRemainingMoney({
     incomeCentavos,

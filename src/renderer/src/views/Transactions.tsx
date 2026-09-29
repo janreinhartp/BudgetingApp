@@ -291,8 +291,14 @@ export default function Transactions(): JSX.Element {
               <td>{t.notes ?? '—'}</td>
               <td>{t.cutoff}</td>
               <td>
-                <button onClick={() => handleEdit(t)}>Edit</button>
-                <button onClick={() => handleDelete(t.id)}>Delete</button>
+                {t.isPayment ? (
+                  <span className="tag">Linked payment</span>
+                ) : (
+                  <>
+                    <button onClick={() => handleEdit(t)}>Edit</button>
+                    <button onClick={() => handleDelete(t.id)}>Delete</button>
+                  </>
+                )}
               </td>
             </tr>
           ))}

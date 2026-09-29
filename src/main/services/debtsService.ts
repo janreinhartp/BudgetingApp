@@ -1,6 +1,7 @@
 import { getDatabase } from '../database/db'
 import { calculateDebtBalance, calculateMonthlyDebtObligations } from '@shared/calculations'
-import type { Debt, DebtSummary, NewDebt } from '@shared/types'
+import type { Debt, DebtSummary, NewDebt, NewPayment, Payment } from '@shared/types'
+import { createTransaction } from './transactionsService'
 
 interface DebtRow {
   id: number
@@ -59,6 +60,76 @@ export function updateDebt(debt: Debt): void {
 
 export function deleteDebt(id: number): void {
   getDatabase().prepare('DELETE FROM debts WHERE id = ?').run(id)
+}
+
+interface PaymentRow {
+  id: number
+  date: string
+  amount_centavos: number
+  account_id: number | null
+  notes: string | null
+  transaction_id: number | null
+}
+
+function toPayment(row: PaymentRow): Payment {
+  return {
+    id: row.id,
+    date: row.date,
+    amountCentavos: row.amount_centavos,
+    accountId: row.account_id,
+    notes: row.notes,
+    transactionId: row.transaction_id
+  }
+}
+
+export function listDebtPayments(debtId: number): Payment[] {
+  const rows = getDatabase()
+    .prepare('SELECT id, date, amount_centavos, account_id, notes, transaction_id FROM payments WHERE debt_id = ? ORDER BY date DESC, id DESC')
+    .all(debtId) as PaymentRow[]
+  return rows.map(toPayment)
+}
+
+export function recordDebtPayment(id: number, payment: NewPayment): Payment {
+  const db = getDatabase()
+  const debt = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as DebtRow | undefined
+  if (!debt) throw new Error('Debt not found')
+  if (!payment.date || !Number.isInteger(payment.amountCentavos) || payment.amountCentavos <= 0) {
+    throw new Error('Enter a valid payment date and amount')
+  }
+  if (payment.amountCentavos > debt.current_balance_centavos) {
+    throw new Error('Payment exceeds the remaining debt balance')
+  }
+
+  return db.transaction(() => {
+    const transaction = createTransaction({
+      date: payment.date,
+      type: 'Debt Payment',
+      categoryId: null,
+      description: debt.name,
+      amountCentavos: payment.amountCentavos,
+      accountId: payment.accountId,
+      notes: payment.notes,
+      cutoff: 'Unassigned'
+    })
+    const result = db.prepare(
+      `INSERT INTO payments (type, debt_id, date, amount_centavos, account_id, notes, transaction_id)
+       VALUES ('DEBT_PAYMENT', ?, ?, ?, ?, ?, ?)`
+    ).run(id, payment.date, payment.amountCentavos, payment.accountId, payment.notes, transaction.id)
+    db.prepare('UPDATE debts SET current_balance_centavos = current_balance_centavos - ? WHERE id = ?')
+      .run(payment.amountCentavos, id)
+    if (payment.accountId != null) {
+      db.prepare('UPDATE accounts SET balance_centavos = balance_centavos - ? WHERE id = ?')
+        .run(payment.amountCentavos, payment.accountId)
+    }
+    return {
+      id: Number(result.lastInsertRowid),
+      date: payment.date,
+      amountCentavos: payment.amountCentavos,
+      accountId: payment.accountId,
+      notes: payment.notes,
+      transactionId: transaction.id
+    }
+  })()
 }
 
 export function getDebtSummary(): DebtSummary {

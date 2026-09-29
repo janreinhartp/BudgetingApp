@@ -33,6 +33,7 @@ export interface Transaction {
   accountId: number | null
   notes: string | null
   cutoff: CutoffAssignment
+  isPayment?: boolean
 }
 
 export type NewTransaction = Omit<Transaction, 'id'>
