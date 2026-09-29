@@ -1,0 +1,11 @@
+node_modules/
+out/
+out-tsc/
+dist/
+dist-electron/
+release/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
