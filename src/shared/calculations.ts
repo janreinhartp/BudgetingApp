@@ -9,6 +9,7 @@ export interface CalcTransaction {
   date: string // YYYY-MM-DD
   amountCentavos: number
   cutoff?: CutoffAssignment
+  paymentType?: 'BILL_PAYMENT' | 'DEBT_PAYMENT' | null
 }
 
 export type CutoffAssignment = 'First' | 'Second' | 'Both' | 'Unassigned'
@@ -48,7 +49,9 @@ export function calculateMonthlyIncome(transactions: CalcTransaction[], month: s
 }
 
 export function calculateMonthlyExpenses(transactions: CalcTransaction[], month: string): number {
-  return sumByType(transactions, month, 'Expense')
+  return transactions
+    .filter((t) => t.type === 'Expense' && t.paymentType !== 'BILL_PAYMENT' && isInMonth(t.date, month))
+    .reduce((total, t) => total + t.amountCentavos, 0)
 }
 
 export function calculateMonthlyDebtPayments(

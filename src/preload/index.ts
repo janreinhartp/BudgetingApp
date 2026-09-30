@@ -7,6 +7,7 @@ import type {
   Debt,
   NewBill,
   NewDebt,
+  NewPayment,
   NewSavingsGoal,
   NewTransaction,
   SavingsGoal,
@@ -52,11 +53,11 @@ const api: BudgetingApi = {
   bills: {
     list: (): Promise<Bill[]> => ipcRenderer.invoke('bills:list'),
     create: (bill: NewBill): Promise<Bill> => ipcRenderer.invoke('bills:create', bill),
-    update: (bill: Omit<Bill, 'status'>): Promise<void> =>
+    update: (bill: Omit<Bill, 'status' | 'paidCentavos' | 'remainingCentavos'>): Promise<void> =>
       ipcRenderer.invoke('bills:update', bill),
     delete: (id: number): Promise<void> => ipcRenderer.invoke('bills:delete', id),
-    markPaid: (id: number, createExpenseTransaction: boolean): Promise<void> =>
-      ipcRenderer.invoke('bills:markPaid', id, createExpenseTransaction)
+    payments: (id: number) => ipcRenderer.invoke('bills:payments', id),
+    pay: (id: number, payment: NewPayment) => ipcRenderer.invoke('bills:pay', id, payment)
   },
   settings: {
     get: (): Promise<AppSettings> => ipcRenderer.invoke('settings:get'),
@@ -68,7 +69,9 @@ const api: BudgetingApi = {
     summary: () => ipcRenderer.invoke('debts:summary'),
     create: (debt: NewDebt): Promise<Debt> => ipcRenderer.invoke('debts:create', debt),
     update: (debt: Debt): Promise<void> => ipcRenderer.invoke('debts:update', debt),
-    delete: (id: number): Promise<void> => ipcRenderer.invoke('debts:delete', id)
+    delete: (id: number): Promise<void> => ipcRenderer.invoke('debts:delete', id),
+    payments: (id: number) => ipcRenderer.invoke('debts:payments', id),
+    pay: (id: number, payment: NewPayment) => ipcRenderer.invoke('debts:pay', id, payment)
   },
   savings: {
     list: (): Promise<SavingsGoal[]> => ipcRenderer.invoke('savings:list'),

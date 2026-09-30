@@ -16,7 +16,7 @@ export function getCutoffSummary(month: string): CutoffSummary {
   const rows = getDatabase()
     .prepare(
       `SELECT type, amount_centavos, cutoff FROM transactions
-       WHERE strftime('%Y-%m', date) = ? AND type != 'Income'`
+       WHERE strftime('%Y-%m', date) = ? AND type NOT IN ('Income', 'Transfer')`
     )
     .all(month) as CutoffTransactionRow[]
 

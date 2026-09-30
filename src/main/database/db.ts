@@ -84,6 +84,28 @@ function applySchema(database: Database.Database): void {
       account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL
     );
 
+    CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL CHECK (type IN ('BILL_PAYMENT', 'DEBT_PAYMENT')),
+      bill_id INTEGER REFERENCES bills(id) ON DELETE SET NULL,
+      debt_id INTEGER REFERENCES debts(id) ON DELETE SET NULL,
+      occurrence_month TEXT,
+      date TEXT NOT NULL,
+      amount_centavos INTEGER NOT NULL CHECK (amount_centavos > 0),
+      account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+      notes TEXT,
+      transaction_id INTEGER UNIQUE REFERENCES transactions(id) ON DELETE SET NULL,
+      CHECK (
+        (type = 'BILL_PAYMENT' AND bill_id IS NOT NULL AND debt_id IS NULL AND occurrence_month IS NOT NULL) OR
+        (type = 'DEBT_PAYMENT' AND debt_id IS NOT NULL AND bill_id IS NULL AND occurrence_month IS NULL)
+      )
+    );
+
+    CREATE INDEX IF NOT EXISTS payments_bill_occurrence
+      ON payments(bill_id, occurrence_month);
+    CREATE INDEX IF NOT EXISTS payments_debt
+      ON payments(debt_id, date);
+
     CREATE TABLE IF NOT EXISTS savings_goals (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,

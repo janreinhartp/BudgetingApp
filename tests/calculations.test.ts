@@ -37,6 +37,14 @@ describe('calculateMonthlyExpenses', () => {
   it('sums expense transactions for the given month', () => {
     expect(calculateMonthlyExpenses(transactions, '2026-09')).toBe(1_200_000)
   })
+
+  it('excludes bill payments so bills are not counted as spending twice', () => {
+    const entries: CalcTransaction[] = [
+      { type: 'Expense', date: '2026-09-05', amountCentavos: 200_000 },
+      { type: 'Expense', date: '2026-09-15', amountCentavos: 150_000, paymentType: 'BILL_PAYMENT' }
+    ]
+    expect(calculateMonthlyExpenses(entries, '2026-09')).toBe(200_000)
+  })
 })
 
 describe('calculateMonthlyDebtPayments', () => {
